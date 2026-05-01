@@ -175,8 +175,17 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for EchoFilter {
         };
 
         let json = serde_json::to_vec_pretty(&body).unwrap_or_else(|_| b"{}".to_vec());
-        let response_headers: [(&str, &[u8]); 1] =
-            [("content-type", b"application/json; charset=utf-8")];
+        // Belt-and-braces against caches/browsers that ignore the lack of
+        // explicit freshness — every echo response must reflect *this*
+        // request, never a stored copy.
+        let response_headers: [(&str, &[u8]); 3] = [
+            ("content-type", b"application/json; charset=utf-8"),
+            (
+                "cache-control",
+                b"no-store, no-cache, must-revalidate, max-age=0",
+            ),
+            ("pragma", b"no-cache"),
+        ];
         envoy_filter.send_response(200, &response_headers, Some(&json), None);
         abi::envoy_dynamic_module_type_on_http_filter_request_headers_status::StopIteration
     }
