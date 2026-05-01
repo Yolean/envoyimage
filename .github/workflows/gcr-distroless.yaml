@@ -1,0 +1,111 @@
+name: gcr-distroless
+# Builds ghcr.io/yolean/envoy:gcr-distroless-vX.Y.Z — envoy on
+# gcr.io/distroless/base-debian13:nonroot. Successor to docker-base's
+# envoy-distroless. Schedule matches the mirror workflow (03:01 UTC) and
+# auto-discovers any upstream envoy release >= MIN_VERSION that doesn't
+# yet have a :gcr-distroless-* tag at ghcr.
+
+on:
+  schedule:
+  - cron: "1 3 * * *"  # 03:01 UTC, same as mirror
+  push:
+    branches: [main]
+    paths:
+    - gcr-distroless/**
+    - gcr-distroless-build.sh
+    - .github/workflows/gcr-distroless.yaml
+  pull_request:
+    paths:
+    - gcr-distroless/**
+    - gcr-distroless-build.sh
+    - .github/workflows/gcr-distroless.yaml
+  workflow_dispatch:
+    inputs:
+      envoy_version:
+        description: 'Specific envoy version (e.g. v1.38.0); leave blank to auto-discover'
+        required: false
+        default: ''
+
+env:
+  MIN_VERSION: '1.38.0'
+  SOURCE_DATE_EPOCH: '0'
+
+jobs:
+  plan:
+    name: Plan versions
+    runs-on: ubuntu-latest
+    outputs:
+      versions: ${{ steps.plan.outputs.versions }}
+      do_push: ${{ steps.plan.outputs.do_push }}
+    steps:
+    - uses: actions/checkout@v4
+    - uses: imjasonh/setup-crane@v0.4
+    - id: plan
+      env:
+        EVENT: ${{ github.event_name }}
+        FORCE_VERSION: ${{ github.event.inputs.envoy_version }}
+      run: |
+        set -euo pipefail
+        ver_ge() { [ "$1" = "$2" ] && return 0; printf '%s\n%s\n' "$2" "$1" | sort -V -C; }
+        default_version=$(grep -E '^ARG ENVOY_VERSION=' gcr-distroless/Dockerfile | head -1 | cut -d= -f2)
+
+        case "$EVENT" in
+          schedule)
+            upstream=$(crane ls docker.io/envoyproxy/envoy)
+            existing=$(crane ls ghcr.io/yolean/envoy 2>/dev/null || true)
+            missing=()
+            while IFS= read -r tag; do
+              [[ "$tag" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)$ ]] || continue
+              ver="${BASH_REMATCH[1]}"
+              ver_ge "$ver" "$MIN_VERSION" || continue
+              if ! grep -Fxq "gcr-distroless-$tag" <<<"$existing"; then
+                missing+=("$tag")
+              fi
+            done <<<"$upstream"
+            json=$(printf '%s\n' "${missing[@]:-}" | python3 -c 'import sys,json; print(json.dumps([l for l in sys.stdin.read().split() if l]))')
+            echo "versions=$json" >> "$GITHUB_OUTPUT"
+            echo "do_push=true" >> "$GITHUB_OUTPUT"
+            echo "schedule discovered missing: ${missing[*]:-<none>}"
+            ;;
+          workflow_dispatch)
+            v="${FORCE_VERSION:-$default_version}"
+            echo "versions=[\"$v\"]" >> "$GITHUB_OUTPUT"
+            echo "do_push=true" >> "$GITHUB_OUTPUT"
+            ;;
+          push)
+            echo "versions=[\"$default_version\"]" >> "$GITHUB_OUTPUT"
+            echo "do_push=true" >> "$GITHUB_OUTPUT"
+            ;;
+          pull_request)
+            echo "versions=[\"$default_version\"]" >> "$GITHUB_OUTPUT"
+            echo "do_push=false" >> "$GITHUB_OUTPUT"
+            ;;
+        esac
+
+  build:
+    name: Build ${{ matrix.version }}
+    needs: plan
+    if: ${{ needs.plan.outputs.versions != '[]' }}
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ${{ fromJSON(needs.plan.outputs.versions) }}
+    env:
+      ENVOY_VERSION: ${{ matrix.version }}
+    steps:
+    - uses: actions/checkout@v4
+    - uses: docker/setup-qemu-action@v3
+    - uses: docker/setup-buildx-action@v3
+    - uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Build, verify, push (PUSH=${{ needs.plan.outputs.do_push }})
+      env:
+        PUSH: ${{ needs.plan.outputs.do_push }}
+      run: ./gcr-distroless-build.sh
