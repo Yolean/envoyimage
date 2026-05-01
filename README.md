@@ -91,9 +91,9 @@ http_filters:
       do_not_close: true
     filter_name: echo
     filter_config:
-      "@type": type.googleapis.com/google.protobuf.StringValue
-      value: |
-        {"path": "/q/envoy/echo"}
+      "@type": type.googleapis.com/google.protobuf.Struct
+      value:
+        path: /q/envoy/echo
 - name: envoy.filters.http.router
   typed_config:
     "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
