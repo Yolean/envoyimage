@@ -16,6 +16,11 @@ WORKDIR /build
 COPY Cargo.toml ./
 COPY .cargo .cargo
 COPY src ./src
+# Sync the Rust SDK git tag with the target envoy version so a single
+# ENVOY_VERSION arg drives both the SDK and the runtime image. Lets
+# CI/cron build any upstream release without hand-editing Cargo.toml.
+RUN sed -i -E "s|tag = \"v[0-9]+\\.[0-9]+\\.[0-9]+\"|tag = \"${ENVOY_VERSION}\"|" Cargo.toml && \
+    grep -E '^envoy-proxy-dynamic-modules-rust-sdk' Cargo.toml
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/build/target,sharing=locked \
     cargo build --release && \

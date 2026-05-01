@@ -1,7 +1,9 @@
 name: echo
-# Builds the downstream :echo-<version> image, verifies /q/envoy/echo over
-# HTTP, then pushes the multi-arch (amd64+arm64/v8) manifest. Runs after the
-# mirror workflow on schedule and on relevant pushes.
+# Builds ghcr.io/yolean/envoy:echo-vX.Y.Z. Spins up the result in docker,
+# verifies /q/envoy/echo over HTTP, then pushes the multi-arch
+# (amd64+arm64/v8) manifest. On schedule the job auto-discovers every
+# upstream envoy release >= MIN_VERSION that doesn't yet have an
+# :echo-* tag at ghcr — no human merge needed for new envoy releases.
 
 on:
   schedule:
@@ -20,35 +22,89 @@ on:
   workflow_dispatch:
     inputs:
       envoy_version:
-        description: 'Envoy version tag (e.g. v1.38.0)'
+        description: 'Specific envoy version (e.g. v1.38.0); leave blank to auto-discover'
         required: false
-        default: 'v1.38.0'
+        default: ''
+
+env:
+  MIN_VERSION: '1.38.0'
 
 jobs:
-  build-verify-push:
-    name: Build, verify, push
+  plan:
+    name: Plan versions
+    runs-on: ubuntu-latest
+    outputs:
+      versions: ${{ steps.plan.outputs.versions }}
+      do_push: ${{ steps.plan.outputs.do_push }}
+    steps:
+    - uses: actions/checkout@v4
+    - uses: imjasonh/setup-crane@v0.4
+    - id: plan
+      env:
+        EVENT: ${{ github.event_name }}
+        FORCE_VERSION: ${{ github.event.inputs.envoy_version }}
+      run: |
+        set -euo pipefail
+        ver_ge() { [ "$1" = "$2" ] && return 0; printf '%s\n%s\n' "$2" "$1" | sort -V -C; }
+        default_version=$(grep -E '^ARG ENVOY_VERSION=' echo/Dockerfile | head -1 | cut -d= -f2)
+
+        case "$EVENT" in
+          schedule)
+            upstream=$(crane ls docker.io/envoyproxy/envoy)
+            existing=$(crane ls ghcr.io/yolean/envoy 2>/dev/null || true)
+            missing=()
+            while IFS= read -r tag; do
+              [[ "$tag" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)$ ]] || continue
+              ver="${BASH_REMATCH[1]}"
+              ver_ge "$ver" "$MIN_VERSION" || continue
+              if ! grep -Fxq "echo-$tag" <<<"$existing"; then
+                missing+=("$tag")
+              fi
+            done <<<"$upstream"
+            json=$(printf '%s\n' "${missing[@]:-}" | python3 -c 'import sys,json; print(json.dumps([l for l in sys.stdin.read().split() if l]))')
+            echo "versions=$json" >> "$GITHUB_OUTPUT"
+            echo "do_push=true" >> "$GITHUB_OUTPUT"
+            echo "schedule discovered missing: ${missing[*]:-<none>}"
+            ;;
+          workflow_dispatch)
+            v="${FORCE_VERSION:-$default_version}"
+            echo "versions=[\"$v\"]" >> "$GITHUB_OUTPUT"
+            echo "do_push=true" >> "$GITHUB_OUTPUT"
+            ;;
+          push)
+            echo "versions=[\"$default_version\"]" >> "$GITHUB_OUTPUT"
+            echo "do_push=true" >> "$GITHUB_OUTPUT"
+            ;;
+          pull_request)
+            echo "versions=[\"$default_version\"]" >> "$GITHUB_OUTPUT"
+            echo "do_push=false" >> "$GITHUB_OUTPUT"
+            ;;
+        esac
+
+  build:
+    name: Build ${{ matrix.version }}
+    needs: plan
+    if: ${{ needs.plan.outputs.versions != '[]' }}
     runs-on: ubuntu-latest
     permissions:
       packages: write
       contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ${{ fromJSON(needs.plan.outputs.versions) }}
     env:
-      ENVOY_VERSION: ${{ github.event.inputs.envoy_version || 'v1.38.0' }}
+      ENVOY_VERSION: ${{ matrix.version }}
     steps:
     - uses: actions/checkout@v4
     - uses: docker/setup-qemu-action@v3
     - uses: docker/setup-buildx-action@v3
-    - name: Login to ghcr.io
-      uses: docker/login-action@v3
+    - uses: docker/login-action@v3
       with:
         registry: ghcr.io
         username: ${{ github.repository_owner }}
         password: ${{ secrets.GITHUB_TOKEN }}
-    - name: Build + verify (host arch only)
+    - name: Build, verify, push (PUSH=${{ needs.plan.outputs.do_push }})
       env:
-        PUSH: "false"
-      run: ./echo-build.sh
-    - name: Build + push multi-arch manifest
-      if: github.event_name != 'pull_request'
-      env:
-        PUSH: "true"
+        PUSH: ${{ needs.plan.outputs.do_push }}
       run: ./echo-build.sh

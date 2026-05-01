@@ -9,6 +9,7 @@ const ENVOY_VERSION: &str = match option_env!("ENVOY_VERSION") {
 };
 
 #[derive(Deserialize, Default)]
+#[serde(deny_unknown_fields)]
 struct ConfigJson {
     #[serde(default)]
     path: Option<String>,

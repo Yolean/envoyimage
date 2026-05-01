@@ -103,34 +103,16 @@ The module file `libyolean_envoy_echo.so` is at `/etc/envoy/`. Either set
 `ENVOY_DYNAMIC_MODULES_SEARCH_PATH=/etc/envoy` (already set in the image)
 or copy the `.so` to a directory on that path in your derived image.
 
-## Layout
+## New envoy releases
 
-```
-envoyimage/
-├── mirror.sh                # bash + crane: mirror new releases
-├── echo-build.sh            # bash: build, run, http-verify, optional push
-├── echo/
-│   ├── Dockerfile           # rust → cdylib → distroless envoy
-│   ├── Cargo.toml           # SDK pinned to envoy v1.38.0 tag
-│   ├── .cargo/config.toml   # macOS-friendly cdylib link flags
-│   ├── envoy.yaml           # default config (listener+filter chain)
-│   └── src/
-│       ├── lib.rs           # module entrypoint
-│       └── echo.rs          # filter implementation
-└── .github/workflows/
-    ├── mirror.yaml          # cron 03:01 UTC, mirror only (unblocked)
-    └── echo.yaml            # cron 03:11 UTC, build → http-verify → push
-```
+No human in the loop. The scheduled `echo` workflow lists every upstream
+`envoyproxy/envoy:vX.Y.Z` at or above `MIN_VERSION` and builds whichever
+ones don't yet have a corresponding `:echo-vX.Y.Z` at
+`ghcr.io/yolean/envoy`. The Rust SDK git tag in `Cargo.toml` is rewritten
+inside the Dockerfile to match the build target, so a single
+`ENVOY_VERSION` value drives both the runtime image and the SDK pin.
 
-## Bumping envoy versions
-
-The Rust SDK is pinned by tag in `echo/Cargo.toml`. To bump from
-`v1.38.0` to a newer release:
-
-1. Update `tag` in `echo/Cargo.toml` to the new release.
-2. Update the `ENVOY_VERSION` defaults in `echo/Dockerfile`,
-   `echo-build.sh`, and `.github/workflows/echo.yaml`.
-3. Open a PR — the echo workflow will build, verify, and (on merge) push.
-
-The mirror workflow doesn't need any change to pick up new upstream
-releases.
+To force a specific version, use the workflow's `workflow_dispatch`
+input. To pre-emptively bump the local default for PR/push builds, edit
+the `ARG ENVOY_VERSION=` line in `echo/Dockerfile` and the matching
+default in `echo-build.sh`.
