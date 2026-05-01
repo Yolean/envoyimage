@@ -12,7 +12,7 @@ const ENVOY_VERSION: &str = match option_env!("ENVOY_VERSION") {
 #[serde(deny_unknown_fields)]
 struct ConfigJson {
     #[serde(default)]
-    path: Option<String>,
+    path_prefix: Option<String>,
 }
 
 pub struct FilterConfig {
@@ -20,7 +20,7 @@ pub struct FilterConfig {
 }
 
 struct Inner {
-    path: String,
+    path_prefix: String,
     hostname: String,
 }
 
@@ -37,10 +37,10 @@ impl FilterConfig {
                 }
             }
         };
-        let path = parsed.path.unwrap_or_else(|| "/q/envoy/echo".to_string());
+        let path_prefix = parsed.path_prefix.unwrap_or_else(|| "/".to_string());
         Some(Self {
             inner: Arc::new(Inner {
-                path,
+                path_prefix,
                 hostname: read_hostname(),
             }),
         })
@@ -140,7 +140,7 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for EchoFilter {
             None => (path_full.clone(), String::new()),
         };
 
-        if real_path != self.inner.path {
+        if !real_path.starts_with(&self.inner.path_prefix) {
             return abi::envoy_dynamic_module_type_on_http_filter_request_headers_status::Continue;
         }
 
@@ -176,16 +176,20 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for EchoFilter {
         };
 
         let json = serde_json::to_vec_pretty(&body).unwrap_or_else(|_| b"{}".to_vec());
-        // Belt-and-braces against caches/browsers that ignore the lack of
-        // explicit freshness — every echo response must reflect *this*
-        // request, never a stored copy.
-        let response_headers: [(&str, &[u8]); 3] = [
+        let content_length = json.len().to_string();
+        // Belt-and-braces against caches/browsers that ignore the lack
+        // of explicit freshness — every echo response must reflect
+        // *this* request, never a stored copy. We always pass the body
+        // bytes; envoy strips the body for HEAD per RFC 9110 while
+        // keeping the headers (incl. content-length).
+        let response_headers: [(&str, &[u8]); 4] = [
             ("content-type", b"application/json; charset=utf-8"),
             (
                 "cache-control",
                 b"no-store, no-cache, must-revalidate, max-age=0",
             ),
             ("pragma", b"no-cache"),
+            ("content-length", content_length.as_bytes()),
         ];
         envoy_filter.send_response(200, &response_headers, Some(&json), None);
         abi::envoy_dynamic_module_type_on_http_filter_request_headers_status::StopIteration

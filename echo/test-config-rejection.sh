@@ -56,10 +56,10 @@ YAML
 # Cases:
 #   name | filter_config snippet (or empty for "no filter_config" case) |
 #   should_start (yes/no) | expected substring in logs (optional)
-write_config valid_path '              filter_config:
+write_config valid_prefix '              filter_config:
                 "@type": type.googleapis.com/google.protobuf.Struct
                 value:
-                  path: /q/echo'
+                  path_prefix: /q/'
 
 write_config no_filter_config ''
 
@@ -70,18 +70,23 @@ write_config empty_struct '              filter_config:
 write_config unknown_field '              filter_config:
                 "@type": type.googleapis.com/google.protobuf.Struct
                 value:
-                  path: /q/echo
+                  path_prefix: /q/
                   bogus: yes'
+
+write_config legacy_path_field '              filter_config:
+                "@type": type.googleapis.com/google.protobuf.Struct
+                value:
+                  path: /q/envoy/echo'
 
 write_config wrong_type '              filter_config:
                 "@type": type.googleapis.com/google.protobuf.Struct
                 value:
-                  path: 123'
+                  path_prefix: 123'
 
 write_config wrong_type_array '              filter_config:
                 "@type": type.googleapis.com/google.protobuf.Struct
                 value:
-                  path: ["nope"]'
+                  path_prefix: ["nope"]'
 
 run_case() {
   local name=$1
@@ -129,10 +134,11 @@ run_case() {
 }
 
 failures=0
-run_case valid_path        yes                                     || failures=$((failures+1))
+run_case valid_prefix      yes                                     || failures=$((failures+1))
 run_case no_filter_config  yes                                     || failures=$((failures+1))
 run_case empty_struct      yes                                     || failures=$((failures+1))
 run_case unknown_field     no  "unknown field"                     || failures=$((failures+1))
+run_case legacy_path_field no  "unknown field"                     || failures=$((failures+1))
 run_case wrong_type        no  "invalid filter_config"             || failures=$((failures+1))
 run_case wrong_type_array  no  "invalid filter_config"             || failures=$((failures+1))
 

@@ -88,6 +88,20 @@ else
   done
 fi
 
+echo "==> verifying HEAD (must return content-type + content-length, no body)"
+HEAD_OUT=$(curl -sS -I "$URL")
+printf '%s\n' "$HEAD_OUT" | grep -qiE '^HTTP/[0-9.]+ 200' || { echo "HEAD: bad status" >&2; exit 1; }
+printf '%s\n' "$HEAD_OUT" | grep -qiE '^content-type: application/json' || { echo "HEAD: missing/wrong content-type" >&2; exit 1; }
+HEAD_LEN=$(printf '%s\n' "$HEAD_OUT" | awk -F': ' 'tolower($1)=="content-length"{gsub(/\r/,"",$2); print $2}')
+[[ "$HEAD_LEN" =~ ^[0-9]+$ && "$HEAD_LEN" -gt 0 ]] || { echo "HEAD: missing/zero content-length ($HEAD_LEN)" >&2; exit 1; }
+HEAD_BODY=$(curl -sS -o - -X HEAD "$URL" | wc -c | tr -d ' ')
+[ "$HEAD_BODY" = "0" ] || { echo "HEAD returned a body of $HEAD_BODY bytes" >&2; exit 1; }
+
+echo "==> verifying POST and arbitrary path also echo"
+POST_RESP=$(curl -sS -X POST -d 'ignored' "http://127.0.0.1:${HTTP_PORT}/foo/bar?x=1")
+printf '%s' "$POST_RESP" | grep -q '"method": "POST"' || { echo "POST not echoed" >&2; exit 1; }
+printf '%s' "$POST_RESP" | grep -q '"real_path": "/foo/bar"' || { echo "POST path not echoed" >&2; exit 1; }
+
 echo "==> verification OK"
 
 # Capture admin /server_info for sanity (optional).

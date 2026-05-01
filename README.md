@@ -50,9 +50,12 @@ Override the upstream version with `ENVOY_VERSION=v1.38.0 ./echo-build.sh`.
 ## The echo filter
 
 `ghcr.io/yolean/envoy:echo-vX.Y.Z` bundles a Rust dynamic-modules filter
-that intercepts a configurable path (default `/q/envoy/echo`) and returns
-a pretty-printed JSON document equivalent in spirit to the plain-text
-response from `registry.k8s.io/echoserver`:
+that intercepts every request whose path starts with a configurable
+`path_prefix` (default `/`, i.e. all paths) and returns a pretty-printed
+JSON document equivalent in spirit to the plain-text response from
+`registry.k8s.io/echoserver`. All HTTP methods are echoed; HEAD returns
+the same headers (including `Content-Length` for the would-be body) but
+no body, per RFC 9110.
 
 ```json
 {
@@ -77,9 +80,8 @@ response from `registry.k8s.io/echoserver`:
 ```
 
 The image ships with `envoy.yaml` wiring the filter at `:8080` and admin
-at `:9901`, with a 404 catchall for everything else. To use the filter
-inside your own envoy bootstrap, add it to your HTTP filter chain *before*
-`envoy.filters.http.router`:
+at `:9901`. To use the filter inside your own envoy bootstrap, add it to
+your HTTP filter chain *before* `envoy.filters.http.router`:
 
 ```yaml
 http_filters:
@@ -93,7 +95,9 @@ http_filters:
     filter_config:
       "@type": type.googleapis.com/google.protobuf.Struct
       value:
-        path: /q/envoy/echo
+        # Default is "/" (echo every request). Narrow the prefix to
+        # scope the filter to a subset of paths.
+        path_prefix: /q/envoy/echo
 - name: envoy.filters.http.router
   typed_config:
     "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
