@@ -21,6 +21,11 @@ PLATFORMS="${PLATFORMS:-linux/amd64,linux/arm64/v8}"
 PUSH="${PUSH:-false}"
 HTTP_PORT="${HTTP_PORT:-18080}"
 
+# Reproducibility: zero file/image timestamps, drop attestations.
+# BuildKit (>=0.11) honors SOURCE_DATE_EPOCH automatically.
+export SOURCE_DATE_EPOCH="${SOURCE_DATE_EPOCH:-0}"
+REPRO_FLAGS=(--provenance=false --sbom=false)
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR/echo"
 
@@ -46,6 +51,7 @@ docker buildx build \
   --load \
   --platform "$HOST_PLATFORM" \
   --build-arg ENVOY_VERSION="$ENVOY_VERSION" \
+  "${REPRO_FLAGS[@]}" \
   -t "$VERIFY_IMAGE" \
   .
 
@@ -94,11 +100,16 @@ if [ "$PUSH" != "true" ]; then
 fi
 
 echo "==> building+pushing $TARGET:$IMAGE_TAG for $PLATFORMS"
+# rewrite-timestamp=true asks BuildKit to zero file mtimes in COPY/RUN
+# layers to SOURCE_DATE_EPOCH; combined with provenance/sbom off and
+# pinned parent images, the same source + ENVOY_VERSION yields the
+# exact same image digest across re-runs.
 docker buildx build \
-  --push \
+  --output "type=image,name=$TARGET:$IMAGE_TAG,push=true,rewrite-timestamp=true" \
   --platform "$PLATFORMS" \
   --build-arg ENVOY_VERSION="$ENVOY_VERSION" \
-  -t "$TARGET:$IMAGE_TAG" \
+  --build-arg SOURCE_DATE_EPOCH="$SOURCE_DATE_EPOCH" \
+  "${REPRO_FLAGS[@]}" \
   .
 
 echo "==> pushed $TARGET:$IMAGE_TAG"

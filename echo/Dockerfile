@@ -5,7 +5,7 @@ ARG ENVOY_VERSION=v1.38.0
 # --platform=$TARGETPLATFORM keeps the build native per-arch (works under
 # QEMU on amd64 runners and natively on arm64 runners) and avoids the
 # cross-toolchain rabbit hole.
-FROM --platform=$TARGETPLATFORM rust:trixie AS builder
+FROM --platform=$TARGETPLATFORM rust:trixie@sha256:a9cfb755b33f5bb872610cbdb25da61f527416b28fc9c052bbce4bef93e7799a AS builder
 ARG ENVOY_VERSION
 ENV ENVOY_VERSION=${ENVOY_VERSION}
 # bindgen (transitive build-dep of the SDK) needs libclang at compile time.
@@ -13,17 +13,27 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends libclang-dev clang && \
     rm -rf /var/lib/apt/lists/*
 WORKDIR /build
-COPY Cargo.toml ./
+COPY Cargo.toml Cargo.lock ./
 COPY .cargo .cargo
 COPY src ./src
 # Sync the Rust SDK git tag with the target envoy version so a single
-# ENVOY_VERSION arg drives both the SDK and the runtime image. Lets
-# CI/cron build any upstream release without hand-editing Cargo.toml.
-RUN sed -i -E "s|tag = \"v[0-9]+\\.[0-9]+\\.[0-9]+\"|tag = \"${ENVOY_VERSION}\"|" Cargo.toml && \
-    grep -E '^envoy-proxy-dynamic-modules-rust-sdk' Cargo.toml
+# ENVOY_VERSION arg drives both the SDK and the runtime image. When the
+# rewrite changes the tag, drop the SDK lockfile entry so cargo
+# re-resolves only that crate; the rest stays pinned for reproducibility.
+RUN orig=$(grep -oE 'tag = "v[0-9]+\.[0-9]+\.[0-9]+"' Cargo.toml | head -1) && \
+    sed -i -E "s|tag = \"v[0-9]+\\.[0-9]+\\.[0-9]+\"|tag = \"${ENVOY_VERSION}\"|" Cargo.toml && \
+    new=$(grep -oE 'tag = "v[0-9]+\.[0-9]+\.[0-9]+"' Cargo.toml | head -1) && \
+    if [ "$orig" != "$new" ]; then \
+      cargo update -p envoy-proxy-dynamic-modules-rust-sdk; \
+      LOCKED_FLAG=""; \
+    else \
+      LOCKED_FLAG="--locked"; \
+    fi && \
+    echo "LOCKED_FLAG=$LOCKED_FLAG" > /tmp/lockflag.env
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/build/target,sharing=locked \
-    cargo build --release && \
+    . /tmp/lockflag.env && \
+    cargo build --release $LOCKED_FLAG && \
     cp target/release/libyolean_envoy_echo.so /libyolean_envoy_echo.so && \
     cp /usr/lib/*-linux-gnu/libgcc_s.so.1 /libgcc_s.so.1
 

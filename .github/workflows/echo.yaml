@@ -28,6 +28,11 @@ on:
 
 env:
   MIN_VERSION: '1.38.0'
+  # Reproducible builds: zero timestamps in image+layers; buildx flags
+  # in echo-build.sh further drop provenance/sbom (which embed build
+  # time and machine info). Same source + same ENVOY_VERSION should
+  # always resolve to the same image digest.
+  SOURCE_DATE_EPOCH: '0'
 
 jobs:
   plan:
