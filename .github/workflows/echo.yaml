@@ -1,0 +1,54 @@
+name: echo
+# Builds the downstream :echo-<version> image, verifies /q/envoy/echo over
+# HTTP, then pushes the multi-arch (amd64+arm64/v8) manifest. Runs after the
+# mirror workflow on schedule and on relevant pushes.
+
+on:
+  schedule:
+  - cron: "11 3 * * *"  # 03:11 UTC, after mirror
+  push:
+    branches: [main]
+    paths:
+    - echo/**
+    - echo-build.sh
+    - .github/workflows/echo.yaml
+  pull_request:
+    paths:
+    - echo/**
+    - echo-build.sh
+    - .github/workflows/echo.yaml
+  workflow_dispatch:
+    inputs:
+      envoy_version:
+        description: 'Envoy version tag (e.g. v1.38.0)'
+        required: false
+        default: 'v1.38.0'
+
+jobs:
+  build-verify-push:
+    name: Build, verify, push
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+    env:
+      ENVOY_VERSION: ${{ github.event.inputs.envoy_version || 'v1.38.0' }}
+    steps:
+    - uses: actions/checkout@v4
+    - uses: docker/setup-qemu-action@v3
+    - uses: docker/setup-buildx-action@v3
+    - name: Login to ghcr.io
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Build + verify (host arch only)
+      env:
+        PUSH: "false"
+      run: ./echo-build.sh
+    - name: Build + push multi-arch manifest
+      if: github.event_name != 'pull_request'
+      env:
+        PUSH: "true"
+      run: ./echo-build.sh

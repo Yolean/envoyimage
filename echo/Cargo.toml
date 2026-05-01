@@ -1,0 +1,26 @@
+[package]
+name = "yolean-envoy-echo"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+
+[dependencies]
+# Pin the SDK to the matching upstream Envoy release tag. The Rust SDK lives in
+# source/extensions/dynamic_modules/sdk/rust inside the envoy repo; Cargo
+# resolves the package by name regardless of subdir.
+envoy-proxy-dynamic-modules-rust-sdk = { git = "https://github.com/envoyproxy/envoy", tag = "v1.38.0" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[lib]
+name = "yolean_envoy_echo"
+path = "src/lib.rs"
+crate-type = ["cdylib", "rlib"]
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+# Avoid pulling in libgcc_s/libunwind via panic_unwind — the distroless envoy
+# runtime image doesn't ship libgcc_s.so.1.
+panic = "abort"

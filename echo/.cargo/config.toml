@@ -1,0 +1,4 @@
+# Allows cdylib builds on macOS for local development; the runtime target
+# (Linux) ignores this.
+[target.'cfg(target_os = "macos")']
+rustflags = ["-C", "link-args=-undefined dynamic_lookup"]
