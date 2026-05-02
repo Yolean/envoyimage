@@ -155,6 +155,7 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for EchoFilter {
             path_full.clone()
         };
 
+        let is_head = method.eq_ignore_ascii_case("HEAD");
         let body = EchoBody {
             hostname: &self.inner.hostname,
             server: Server {
@@ -176,22 +177,22 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for EchoFilter {
         };
 
         let json = serde_json::to_vec_pretty(&body).unwrap_or_else(|_| b"{}".to_vec());
-        let content_length = json.len().to_string();
-        // Belt-and-braces against caches/browsers that ignore the lack
-        // of explicit freshness — every echo response must reflect
-        // *this* request, never a stored copy. We always pass the body
-        // bytes; envoy strips the body for HEAD per RFC 9110 while
-        // keeping the headers (incl. content-length).
-        let response_headers: [(&str, &[u8]); 4] = [
+        let response_headers: [(&str, &[u8]); 3] = [
             ("content-type", b"application/json; charset=utf-8"),
             (
                 "cache-control",
                 b"no-store, no-cache, must-revalidate, max-age=0",
             ),
             ("pragma", b"no-cache"),
-            ("content-length", content_length.as_bytes()),
         ];
-        envoy_filter.send_response(200, &response_headers, Some(&json), None);
+        // Envoy auto-computes content-length from the body bytes we
+        // pass. For HEAD we pass an empty body so the resulting
+        // content-length (0) matches what's on the wire — passing the
+        // full body causes envoy to strip the body for HEAD but keep
+        // content-length at the would-be size, which hangs HTTP/1.1
+        // clients waiting for bytes that never arrive.
+        let body_bytes: &[u8] = if is_head { &[] } else { &json };
+        envoy_filter.send_response(200, &response_headers, Some(body_bytes), None);
         abi::envoy_dynamic_module_type_on_http_filter_request_headers_status::StopIteration
     }
 }
