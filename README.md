@@ -11,7 +11,8 @@ Two flavors at `ghcr.io/yolean/envoy`:
 | ------------------------- | ----------------------------------------- | -------------------------- |
 | `vX.Y.Z`                  | mirror of `envoyproxy/envoy:vX.Y.Z`       | all upstream archs         |
 | `distroless-vX.Y.Z`       | mirror of `envoyproxy/envoy:distroless-vX.Y.Z` | all upstream archs    |
-| `echo-vX.Y.Z`             | downstream image with the echo filter     | linux/amd64, linux/arm64/v8 |
+| `echo-vX.Y.Z`             | downstream image with the Rust echo filter | linux/amd64, linux/arm64/v8 |
+| `echo-go-vX.Y.Z`          | same image with a Go echo filter (for comparison) | linux/amd64, linux/arm64/v8 |
 
 Mirroring is a `crane cp` of the upstream multi-arch manifest, so all the
 upstream architectures are preserved. Only release tags
