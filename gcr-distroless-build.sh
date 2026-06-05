@@ -4,13 +4,13 @@
 # verify; PUSH=true does a multi-arch reproducible push.
 #
 #   ./gcr-distroless-build.sh                 # build + smoke-test
-#   ENVOY_VERSION=v1.38.0 ./gcr-distroless-build.sh
+#   ENVOY_VERSION=v1.38.1 ./gcr-distroless-build.sh
 #   PUSH=true ./gcr-distroless-build.sh       # multi-arch + push
 
 set -eo pipefail
 [ -z "$DEBUG" ] || set -x
 
-ENVOY_VERSION="${ENVOY_VERSION:-v1.38.0}"
+ENVOY_VERSION="${ENVOY_VERSION:-v1.38.1}"
 TARGET="${TARGET:-ghcr.io/yolean/envoy}"
 IMAGE_TAG="${IMAGE_TAG:-gcr-distroless-${ENVOY_VERSION}}"
 PLATFORMS="${PLATFORMS:-linux/amd64,linux/arm64/v8}"

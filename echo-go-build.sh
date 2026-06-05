@@ -5,7 +5,7 @@
 set -eo pipefail
 [ -z "$DEBUG" ] || set -x
 
-ENVOY_VERSION="${ENVOY_VERSION:-v1.38.0}"
+ENVOY_VERSION="${ENVOY_VERSION:-v1.38.1}"
 TARGET="${TARGET:-ghcr.io/yolean/envoy}"
 IMAGE_TAG="${IMAGE_TAG:-echo-go-${ENVOY_VERSION}}"
 PLATFORMS="${PLATFORMS:-linux/amd64,linux/arm64/v8}"

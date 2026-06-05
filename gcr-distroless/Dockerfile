@@ -6,7 +6,7 @@
 # as docker-base used to ship, but driven by ENVOY_VERSION so the same
 # pipeline that mirrors and builds :echo-* can build :gcr-distroless-*
 # tags for every release.
-ARG ENVOY_VERSION=v1.38.0
+ARG ENVOY_VERSION=v1.38.1
 
 FROM --platform=$TARGETPLATFORM envoyproxy/envoy:distroless-${ENVOY_VERSION} AS envoy
 
