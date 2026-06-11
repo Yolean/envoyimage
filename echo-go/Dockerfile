@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-ARG ENVOY_VERSION=v1.38.1
+ARG ENVOY_VERSION=v1.38.2
 
 FROM --platform=$TARGETPLATFORM golang:1.25-trixie@sha256:3965b9511a9bed199f0b4eb146f99c31971a5c0adb3240d9f25e233cbd9e01c8 AS builder
 ARG ENVOY_VERSION

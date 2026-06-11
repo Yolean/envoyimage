@@ -7,7 +7,7 @@
 set -eo pipefail
 [ -z "$DEBUG" ] || set -x
 
-IMAGE="${IMAGE:-ghcr.io/yolean/envoy:echo-v1.38.1-verify}"
+IMAGE="${IMAGE:-ghcr.io/yolean/envoy:echo-v1.38.2-verify}"
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 

@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-ARG ENVOY_VERSION=v1.38.1
+ARG ENVOY_VERSION=v1.38.2
 
 # Build the dynamic module .so for the target architecture. Using
 # --platform=$TARGETPLATFORM keeps the build native per-arch (works under
