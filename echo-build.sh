@@ -6,7 +6,7 @@
 #   ./echo-build.sh
 #
 # Specific upstream envoy version:
-#   ENVOY_VERSION=v1.38.2 ./echo-build.sh
+#   ENVOY_VERSION=v1.38.3 ./echo-build.sh
 #
 # Multi-arch build + push (requires buildx + ghcr login):
 #   PUSH=true ./echo-build.sh
@@ -14,7 +14,7 @@
 set -eo pipefail
 [ -z "$DEBUG" ] || set -x
 
-ENVOY_VERSION="${ENVOY_VERSION:-v1.38.2}"
+ENVOY_VERSION="${ENVOY_VERSION:-v1.38.3}"
 TARGET="${TARGET:-ghcr.io/yolean/envoy}"
 IMAGE_TAG="${IMAGE_TAG:-echo-${ENVOY_VERSION}}"
 PLATFORMS="${PLATFORMS:-linux/amd64,linux/arm64/v8}"

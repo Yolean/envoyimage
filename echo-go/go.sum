@@ -4,3 +4,5 @@ github.com/envoyproxy/envoy/source/extensions/dynamic_modules v0.0.0-20260604184
 github.com/envoyproxy/envoy/source/extensions/dynamic_modules v0.0.0-20260604184446-5022e0b6cadc/go.mod h1:NpQosaDAX20s0ak0o/4b5dLOdvkbk15XqoakhSNX1Gg=
 github.com/envoyproxy/envoy/source/extensions/dynamic_modules v0.0.0-20260610221733-f387231af8dd h1:qYXy/0Gf15/QRe+hu0R9nUGbsjgGINp3qe6T0FHhb3w=
 github.com/envoyproxy/envoy/source/extensions/dynamic_modules v0.0.0-20260610221733-f387231af8dd/go.mod h1:NpQosaDAX20s0ak0o/4b5dLOdvkbk15XqoakhSNX1Gg=
+github.com/envoyproxy/envoy/source/extensions/dynamic_modules v0.0.0-20260623225136-0ebfcfe5b048 h1:/vYqe2OYTbpeAuKSTi8YGRZH3piVSysvNMpcWtJhBvw=
+github.com/envoyproxy/envoy/source/extensions/dynamic_modules v0.0.0-20260623225136-0ebfcfe5b048/go.mod h1:NpQosaDAX20s0ak0o/4b5dLOdvkbk15XqoakhSNX1Gg=
