@@ -103,7 +103,7 @@ struct RequestInfo<'a> {
 
 impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for EchoFilter {
     fn on_request_headers(
-        &mut self,
+        &self,
         envoy_filter: &mut EHF,
         _end_of_stream: bool,
     ) -> abi::envoy_dynamic_module_type_on_http_filter_request_headers_status {
