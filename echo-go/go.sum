@@ -1,14 +1,2 @@
-github.com/envoyproxy/envoy/source/extensions/dynamic_modules v0.0.0-20260423231439-f1dd21b16c24 h1:NM/c/D2pvvSpEqmF2p8tWnZPbeiZ1B8gS5TPH764qao=
-github.com/envoyproxy/envoy/source/extensions/dynamic_modules v0.0.0-20260423231439-f1dd21b16c24/go.mod h1:NpQosaDAX20s0ak0o/4b5dLOdvkbk15XqoakhSNX1Gg=
-github.com/envoyproxy/envoy/source/extensions/dynamic_modules v0.0.0-20260604184446-5022e0b6cadc h1:CkSV+5TzzGqRSFU8ncSc59mR5NMZS/qfRd1e/myndio=
-github.com/envoyproxy/envoy/source/extensions/dynamic_modules v0.0.0-20260604184446-5022e0b6cadc/go.mod h1:NpQosaDAX20s0ak0o/4b5dLOdvkbk15XqoakhSNX1Gg=
-github.com/envoyproxy/envoy/source/extensions/dynamic_modules v0.0.0-20260610221733-f387231af8dd h1:qYXy/0Gf15/QRe+hu0R9nUGbsjgGINp3qe6T0FHhb3w=
-github.com/envoyproxy/envoy/source/extensions/dynamic_modules v0.0.0-20260610221733-f387231af8dd/go.mod h1:NpQosaDAX20s0ak0o/4b5dLOdvkbk15XqoakhSNX1Gg=
-github.com/envoyproxy/envoy/source/extensions/dynamic_modules v0.0.0-20260623225136-0ebfcfe5b048 h1:/vYqe2OYTbpeAuKSTi8YGRZH3piVSysvNMpcWtJhBvw=
-github.com/envoyproxy/envoy/source/extensions/dynamic_modules v0.0.0-20260623225136-0ebfcfe5b048/go.mod h1:NpQosaDAX20s0ak0o/4b5dLOdvkbk15XqoakhSNX1Gg=
-github.com/envoyproxy/envoy/source/extensions/dynamic_modules v0.0.0-20260714211746-8eea3285d6bd h1:xmM11ZCeaeftVZPqXmpWt1wUeu7V5XIHQHiBhMoDnGA=
-github.com/envoyproxy/envoy/source/extensions/dynamic_modules v0.0.0-20260714211746-8eea3285d6bd/go.mod h1:NpQosaDAX20s0ak0o/4b5dLOdvkbk15XqoakhSNX1Gg=
-github.com/envoyproxy/envoy/source/extensions/dynamic_modules v0.0.0-20261012213112-72315c132d46 h1:+0GxyrvFG8XPyTUK1DoFf6DUwfnSF+7t1sk7MCAMEZA=
-github.com/envoyproxy/envoy/source/extensions/dynamic_modules v0.0.0-20261012213112-72315c132d46/go.mod h1:NpQosaDAX20s0ak0o/4b5dLOdvkbk15XqoakhSNX1Gg=
-github.com/envoyproxy/envoy/source/extensions/dynamic_modules v0.0.0-20261013191321-9e5580933739 h1:7Vkkad2T8Mz780ti3JKxt6J0szDFYc5ktRtuMPqgyL4=
-github.com/envoyproxy/envoy/source/extensions/dynamic_modules v0.0.0-20261013191321-9e5580933739/go.mod h1:NpQosaDAX20s0ak0o/4b5dLOdvkbk15XqoakhSNX1Gg=
+github.com/envoyproxy/envoy/source/extensions/dynamic_modules v0.0.0-20261023013226-86af01fdec40 h1:SXUY7tHm1iq5G41FWXEW32MPzOGfSnDJhtMALPAzndw=
+github.com/envoyproxy/envoy/source/extensions/dynamic_modules v0.0.0-20261023013226-86af01fdec40/go.mod h1:NpQosaDAX20s0ak0o/4b5dLOdvkbk15XqoakhSNX1Gg=
