@@ -30,6 +30,11 @@ mirrored immediately even if the echo image fails to build.
 spins it up in docker, verifies `/q/envoy/echo` over HTTP, and only then
 pushes the multi-arch manifest.
 
+The schedule builds every missing release with main's echo source, so a
+patch release of an older minor can fail once main has moved to a newer SDK.
+To build one, branch `hotfix-<anything>` from the last commit on that minor
+and bump `ENVOY_VERSION` there; a push to the branch builds and pushes it.
+
 ## Local usage
 
 Both workflows are runnable locally with bash. You need

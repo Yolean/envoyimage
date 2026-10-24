@@ -9,7 +9,7 @@ on:
   schedule:
   - cron: "11 3 * * *"  # 03:11 UTC, after mirror
   push:
-    branches: [main]
+    branches: [main, 'hotfix-*']
     paths:
     - echo/**
     - echo-build.sh
